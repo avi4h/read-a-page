@@ -41,7 +41,7 @@ export const addBook = async (book: BookPage): Promise<void> => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.add(book);
-        
+
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
     });
@@ -53,7 +53,7 @@ export const getBooks = async (): Promise<BookPage[]> => {
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.getAll();
-        
+
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
@@ -65,7 +65,7 @@ export const deleteBook = async (id: string): Promise<void> => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.delete(id);
-        
+
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
     });
@@ -77,7 +77,7 @@ export const getBookIds = async (): Promise<Set<string>> => {
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.getAllKeys();
-        
+
         request.onsuccess = () => resolve(new Set(request.result as string[]));
         request.onerror = () => reject(request.error);
     });

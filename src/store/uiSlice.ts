@@ -15,11 +15,11 @@ const initialState: UiState = {
   view: 'reading',
   theme: (() => {
     if (typeof window !== 'undefined' && window.localStorage) {
-        const storedTheme = window.localStorage.getItem('theme') as Theme | null;
-        if (storedTheme) return storedTheme;
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-        }
+      const storedTheme = window.localStorage.getItem('theme') as Theme | null;
+      if (storedTheme) return storedTheme;
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
     }
     return 'light';
   })(),

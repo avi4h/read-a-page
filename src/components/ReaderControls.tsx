@@ -6,10 +6,10 @@ import { updateReadingSettings } from '../store/settingsSlice';
 import { setActivePopover } from '../store/uiSlice';
 import { changeBook } from '../store/readingSlice';
 
-interface ReaderControlsProps {}
+interface ReaderControlsProps { }
 
 const Popover: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div 
+    <div
         className="absolute bottom-full mb-4 w-80 origin-bottom bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 animate-popover-in"
         onClick={(e) => e.stopPropagation()}
     >
@@ -25,11 +25,10 @@ const ControlButton: React.FC<{
 }> = ({ onClick, isActive, children, className = '' }) => (
     <button
         onClick={onClick}
-        className={`flex-1 whitespace-nowrap px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-150 transform active:scale-95 ${
-            isActive
+        className={`flex-1 whitespace-nowrap px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-150 transform active:scale-95 ${isActive
                 ? 'bg-brand-teal-500 text-white shadow-sm'
                 : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
-        } ${className}`}
+            } ${className}`}
     >
         {children}
     </button>
@@ -41,8 +40,8 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
     const settings = useAppSelector(state => state.settings.reading);
     const activePopover = useAppSelector(state => state.ui.activePopover);
     const { currentIndex, isLoading } = useAppSelector(state => ({
-      currentIndex: state.reading.currentIndex,
-      isLoading: state.reading.status === 'loading',
+        currentIndex: state.reading.currentIndex,
+        isLoading: state.reading.status === 'loading',
     }));
 
     const onUpdateSettings = (newSettings: Partial<ReadingSettings>) => dispatch(updateReadingSettings(newSettings));
@@ -58,13 +57,13 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
         e.stopPropagation();
         onTogglePopover(popover);
     };
-    
+
     const controlBarClasses = `relative flex items-center justify-center space-x-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-full border border-slate-200 dark:border-slate-700 p-2 transition-shadow duration-300 ${activePopover ? 'shadow-2xl' : 'shadow-lg'}`;
 
     return (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-controls-in" onClick={(e) => e.stopPropagation()}>
             <div className={controlBarClasses}>
-                
+
                 {activePopover === 'font' && (
                     <Popover>
                         <div className="space-y-6">
@@ -75,14 +74,14 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
                                     <ControlButton onClick={() => onUpdateSettings({ fontFamily: 'serif' })} isActive={settings.fontFamily === 'serif'}>Serif</ControlButton>
                                 </div>
                             </div>
-                             <div>
+                            <div>
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 text-center">Font Size</h4>
                                 <div className="flex gap-2">
-                                     {fontSizes.map(size => (
-                                        <ControlButton 
-                                            key={size} 
-                                            onClick={() => onUpdateSettings({ fontSize: size })} 
-                                            isActive={settings.fontSize === size} 
+                                    {fontSizes.map(size => (
+                                        <ControlButton
+                                            key={size}
+                                            onClick={() => onUpdateSettings({ fontSize: size })}
+                                            isActive={settings.fontSize === size}
                                             className="uppercase"
                                         >
                                             {size}
@@ -94,7 +93,7 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
                     </Popover>
                 )}
 
-                 {activePopover === 'settings' && (
+                {activePopover === 'settings' && (
                     <Popover>
                         <div className="space-y-6">
                             <div>
@@ -104,29 +103,29 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
                                     <ControlButton onClick={() => onUpdateSettings({ textAlign: 'justify' })} isActive={settings.textAlign === 'justify'}><AlignJustifyIcon className="w-5 h-5 mx-auto" /></ControlButton>
                                 </div>
                             </div>
-                             <div>
+                            <div>
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 text-center">Page Width</h4>
                                 <div className="flex gap-2">
-                                     <ControlButton onClick={() => onUpdateSettings({ maxWidth: '2xl' })} isActive={settings.maxWidth === '2xl'}>Narrow</ControlButton>
-                                     <ControlButton onClick={() => onUpdateSettings({ maxWidth: '3xl' })} isActive={settings.maxWidth === '3xl'}>Medium</ControlButton>
-                                     <ControlButton onClick={() => onUpdateSettings({ maxWidth: '4xl' })} isActive={settings.maxWidth === '4xl'}>Wide</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '2xl' })} isActive={settings.maxWidth === '2xl'}>Narrow</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '3xl' })} isActive={settings.maxWidth === '3xl'}>Medium</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '4xl' })} isActive={settings.maxWidth === '4xl'}>Wide</ControlButton>
                                 </div>
                             </div>
                         </div>
                     </Popover>
                 )}
 
-                <button 
-                    disabled={isLoading} 
+                <button
+                    disabled={isLoading}
                     className={`p-3 rounded-full group transition-all duration-150 transform active:scale-90 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 ${activePopover === 'font' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
-                    onClick={(e) => handleToggle(e, 'font')} 
+                    onClick={(e) => handleToggle(e, 'font')}
                     aria-label="Font settings">
                     <FontIcon className={`${iconStyle} ${activePopover === 'font' ? activeIconStyle : ''}`} />
                 </button>
-                <button 
-                    disabled={isLoading} 
+                <button
+                    disabled={isLoading}
                     className={`p-3 rounded-full group transition-all duration-150 transform active:scale-90 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 ${activePopover === 'settings' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
-                    onClick={(e) => handleToggle(e, 'settings')} 
+                    onClick={(e) => handleToggle(e, 'settings')}
                     aria-label="Display settings">
                     <SettingsIcon className={`${iconStyle} ${activePopover === 'settings' ? activeIconStyle : ''}`} />
                 </button>

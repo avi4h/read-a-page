@@ -1,14 +1,17 @@
-# Run and deploy your AI Studio app
+### Read-a-Page 
 
-This contains everything you need to run your app locally.
+So basically this is just a simple reading app I have been tinkering with. Nothing too fancy.
 
-## Run Locally
+#### What it does
 
-**Prerequisites:**  Node.js
+The app lets you browse through a collection of book pages and read them in a clean, distraction free environment. 
 
+- Bookshelf view 
+- Reading view
+- Basic controls 
+- Search 
+- Dark mode
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+#### Stack
+
+Built with React + TypeScript because thats what I know best. Using Redux for state management which might be overkill for this size project but whatever. Tailwind for styling.

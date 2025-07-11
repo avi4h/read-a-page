@@ -2,9 +2,9 @@ export interface BookPage {
   id: string;
   title: string;
   author: string;
-  pageContent: string;
+  pageContent: string[];
   coverImageUrl: string;
-  bookshopUrl: string;
+  amazonBookUrl: string;
   submittedBy: string;
 }
 

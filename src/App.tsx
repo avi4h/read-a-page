@@ -14,7 +14,7 @@ import { loadInitialBook, setBookById } from './store/readingSlice';
 
 const App: React.FC = () => {
     const dispatch = useAppDispatch();
-    
+
     const view = useAppSelector((state) => state.ui.view);
     const theme = useAppSelector((state) => state.ui.theme);
     const currentBook = useAppSelector((state) => state.reading.currentBook);
@@ -32,6 +32,12 @@ const App: React.FC = () => {
             const bookId = match[1];
             dispatch(setView('reading'));
             dispatch(setBookById(bookId));
+            
+            // Update the URL to clean up any query parameters without causing a reload
+            if (window.location.search || window.location.hash) {
+                const newUrl = `${window.location.origin}/book/${bookId}`;
+                window.history.replaceState({}, '', newUrl);
+            }
         }
     }, [dispatch]);
 
@@ -53,11 +59,13 @@ const App: React.FC = () => {
             <Header />
             <Sidebar />
             <main key={view} className="animate-fade-in">
-                {view === 'reading' && <ReadingPane />}
-                {view === 'bookshelf' && <BookshelfPage />}
-                {view === 'search' && <SearchResultsPage />}
-                {view === 'covers' && <CoversPage />}
-                {view === 'about' && <AboutPage />}
+                <div className="transition-all duration-300 ease-in-out">
+                    {view === 'reading' && <ReadingPane />}
+                    {view === 'bookshelf' && <BookshelfPage />}
+                    {view === 'search' && <SearchResultsPage />}
+                    {view === 'covers' && <CoversPage />}
+                    {view === 'about' && <AboutPage />}
+                </div>
             </main>
             {view === 'reading' && currentBook && <ReaderControls />}
         </div>

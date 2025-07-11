@@ -1,6 +1,0 @@
-{
-  "name": "Read a Page - Book Discovery",
-  "description": "A unique platform for discovering books in an engaging way. Instead of judging a book by its cover, it allows you to read a page of a random book. If that hooks you, you can then choose to reveal the title and author.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}

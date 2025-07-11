@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { type BookPage } from '../types';
-import { HeartIcon, CheckIcon, SearchIcon, CopyIcon, CloseIcon } from './Icons';
+import { HeartIcon, CheckIcon, SearchIcon, CopyIcon, CloseIcon, LogoLargeIcon } from './Icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { addBookToShelf } from '../store/bookshelfSlice';
+import { addBookToShelfOptimistic } from '../store/bookshelfSlice';
 import { setSearchQuery, executeSearch } from '../store/searchSlice';
 import { setView } from '../store/uiSlice';
 import { setBookById } from '../store/readingSlice';
@@ -23,7 +23,7 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
     const handleAddClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isSaved) return;
-        dispatch(addBookToShelf(book));
+        dispatch(addBookToShelfOptimistic(book));
     };
 
     const handleCopyLink = (e: React.MouseEvent) => {
@@ -37,15 +37,15 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
 
     return (
         <div
-            className="group flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 bg-white dark:bg-slate-800/50 rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-lg"
+            className="group flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 bg-white dark:bg-slate-800/50 rounded-lg shadow-sm transition-all duration-300 hover:shadow-lg animate-fade-in-up"
         >
             <button
                 onClick={handleSelectBook}
                 className="flex-shrink-0 self-center sm:self-start rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800/50 focus:ring-brand-teal-500"
                 aria-label={`Read ${book.title}`}
             >
-                <img 
-                    src={book.coverImageUrl} 
+                <img
+                    src={book.coverImageUrl}
                     alt={`Cover of ${book.title}`}
                     className="w-24 h-36 object-cover rounded-md"
                     width="96"
@@ -53,8 +53,8 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
                 />
             </button>
             <div className="flex-grow">
-                 <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                    <button 
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                    <button
                         onClick={handleSelectBook}
                         className="text-left hover:text-brand-teal-600 dark:hover:text-brand-teal-400 transition-colors focus:outline-none focus:underline"
                     >
@@ -63,22 +63,23 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
                 </h3>
                 <p className="text-md text-slate-600 dark:text-slate-300">by {book.author}</p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 line-clamp-3">
-                    {book.pageContent}
+                    {book.pageContent[0]}
                 </p>
             </div>
             <div className="flex-shrink-0 self-center sm:self-start flex flex-row items-center gap-4 sm:flex-col sm:items-end sm:gap-3">
-                 <button 
-                    onClick={handleAddClick}
-                    disabled={isSaved || isSaving}
-                    className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
-                        isSaved
-                        ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400'
-                        : 'border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
-                    }`}
-                >
-                    {isSaved ? <CheckIcon className="w-4 h-4"/> : <HeartIcon className="w-4 h-4" />}
-                    <span>{isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}</span>
-                </button>
+                <div className="w-[100px]">
+                    <button
+                        onClick={handleAddClick}
+                        disabled={isSaved || isSaving}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed transform hover:scale-105 ${isSaved
+                                ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400'
+                                : 'border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
+                            }`}
+                    >
+                        {isSaved ? <CheckIcon className="w-4 h-4 animate-bounce-in" /> : <HeartIcon className="w-4 h-4" />}
+                        <span>{isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}</span>
+                    </button>
+                </div>
                 <div className="relative">
                     <button
                         onClick={handleCopyLink}
@@ -99,7 +100,7 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
 };
 
 const LoadingSkeleton: React.FC = () => (
-     <div className="space-y-4 animate-pulse">
+    <div className="space-y-4 animate-pulse">
         {[...Array(3)].map((_, i) => (
             <div key={i} className="flex gap-6 p-4 bg-white dark:bg-slate-800/50 rounded-lg">
                 <div className="w-24 h-36 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
@@ -146,7 +147,7 @@ const SearchResultsPage: React.FC = () => {
             setCurrentPage(1);
         }
     };
-    
+
     const totalPages = Math.ceil(results.length / itemsPerPage);
     const currentResults = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -160,7 +161,7 @@ const SearchResultsPage: React.FC = () => {
     const handlePrevPage = () => {
         setCurrentPage(prev => Math.max(prev - 1, 1));
     };
-    
+
     const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setItemsPerPage(Number(e.target.value));
         setCurrentPage(1);
@@ -169,7 +170,7 @@ const SearchResultsPage: React.FC = () => {
     const pageButtonClasses = "px-6 py-2 text-base font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-brand-teal-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
     const enabledClasses = "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600";
     const disabledClasses = "bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700";
-    
+
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Search the Library</h1>
@@ -212,7 +213,7 @@ const SearchResultsPage: React.FC = () => {
                     <p>{error}</p>
                 </div>
             )}
-            
+
             {status === 'succeeded' && (
                 <div>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
@@ -222,9 +223,9 @@ const SearchResultsPage: React.FC = () => {
                         {results.length > 0 && (
                             <div className="flex items-center gap-2 self-end sm:self-center">
                                 <label htmlFor="items-per-page" className="text-sm font-medium text-slate-600 dark:text-slate-400">Per Page:</label>
-                                <select 
-                                    id="items-per-page" 
-                                    value={itemsPerPage} 
+                                <select
+                                    id="items-per-page"
+                                    value={itemsPerPage}
                                     onChange={handleItemsPerPageChange}
                                     className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-sm p-1.5 focus:ring-2 focus:ring-brand-teal-500 focus:border-brand-teal-500"
                                 >
@@ -235,16 +236,16 @@ const SearchResultsPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    
+
                     {results.length > 0 ? (
                         <>
                             <div className="space-y-4">
                                 {currentResults.map(book => <SearchResultCard key={book.id} book={book} />)}
                             </div>
-                            
+
                             {totalPages > 1 && (
                                 <div className="mt-12 flex justify-center items-center gap-4">
-                                    <button 
+                                    <button
                                         onClick={handlePrevPage}
                                         disabled={currentPage === 1}
                                         className={`${pageButtonClasses} ${currentPage === 1 ? disabledClasses : enabledClasses}`}
@@ -254,7 +255,7 @@ const SearchResultsPage: React.FC = () => {
                                     <span className="text-slate-600 dark:text-slate-400 font-medium">
                                         Page {currentPage} of {totalPages}
                                     </span>
-                                    <button 
+                                    <button
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages}
                                         className={`${pageButtonClasses} ${currentPage === totalPages ? disabledClasses : enabledClasses}`}
@@ -265,7 +266,10 @@ const SearchResultsPage: React.FC = () => {
                             )}
                         </>
                     ) : (
-                         <div className="text-center p-8 mt-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div className="text-center p-8 mt-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                            <div className="flex justify-center mb-4">
+                                <LogoLargeIcon className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+                            </div>
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">No Matches Found</h2>
                             <p className="text-slate-600 dark:text-slate-400">
                                 We couldn't find any books matching your search. Please try a different query.
@@ -274,9 +278,9 @@ const SearchResultsPage: React.FC = () => {
                     )}
                 </div>
             )}
-            
+
             {status === 'idle' && (
-                 <div className="text-center p-8 mt-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                <div className="text-center p-8 mt-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
                     <SearchIcon className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
                     <h2 className="mt-4 text-xl font-bold text-slate-800 dark:text-white mb-2">Ready to Search</h2>
                     <p className="text-slate-600 dark:text-slate-400">

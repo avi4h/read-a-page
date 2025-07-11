@@ -6,10 +6,14 @@ import { type BookPage } from '../types';
 
 const ITEMS_PER_PAGE = 24;
 
-const CoverCard: React.FC<{ book: BookPage; onSelect: () => void }> = ({ book, onSelect }) => (
+const CoverCard: React.FC<{ book: BookPage; onSelect: () => void; index: number }> = ({ book, onSelect, index }) => (
     <button 
         onClick={onSelect}
-        className="group relative block bg-slate-800/50 rounded-lg shadow-md hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 focus:ring-brand-teal-500 transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
+        className="group relative block bg-slate-800/50 rounded-lg shadow-md hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 focus:ring-brand-teal-500 transition-all duration-300 overflow-hidden transform hover:-translate-y-1 animate-stagger-in"
+        style={{
+            animationDelay: `${index * 50}ms`,
+            animationFillMode: 'both'
+        }}
         aria-label={`Read ${book.title}`}
     >
         <img src={book.coverImageUrl} alt={`Cover of ${book.title}`} className="w-full h-auto object-cover aspect-[2/3]" />
@@ -29,9 +33,9 @@ const CoversPage: React.FC = () => {
         dispatch(setBookById(bookId));
         dispatch(setView('reading'));
     };
-    
-    const sortedBooks = useMemo(() => 
-        [...allBooks].sort((a,b) => a.title.localeCompare(b.title)), 
+
+    const sortedBooks = useMemo(() =>
+        [...allBooks].sort((a, b) => a.title.localeCompare(b.title)),
         [allBooks]
     );
 
@@ -60,17 +64,17 @@ const CoversPage: React.FC = () => {
     const disabledClasses = "bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700";
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">Discover by Cover</h1>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-                {currentBooks.map(book => (
-                    <CoverCard key={book.id} book={book} onSelect={() => handleSelectBook(book.id)} />
+                {currentBooks.map((book, index) => (
+                    <CoverCard key={book.id} book={book} onSelect={() => handleSelectBook(book.id)} index={index} />
                 ))}
             </div>
 
             {totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-4">
-                    <button 
+                    <button
                         onClick={handlePrevPage}
                         disabled={currentPage === 1}
                         className={`${pageButtonClasses} ${currentPage === 1 ? disabledClasses : enabledClasses}`}
@@ -80,7 +84,7 @@ const CoversPage: React.FC = () => {
                     <span className="text-slate-600 dark:text-slate-400 font-medium">
                         Page {currentPage} of {totalPages}
                     </span>
-                    <button 
+                    <button
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                         className={`${pageButtonClasses} ${currentPage === totalPages ? disabledClasses : enabledClasses}`}

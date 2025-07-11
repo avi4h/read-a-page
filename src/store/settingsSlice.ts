@@ -8,9 +8,9 @@ interface SettingsState {
 const initialState: SettingsState = {
   reading: {
     fontSize: 'lg',
-    fontFamily: 'serif',
+    fontFamily: 'sans',
     textAlign: 'justify',
-    maxWidth: '2xl',
+    maxWidth: '3xl',
   },
 };
 

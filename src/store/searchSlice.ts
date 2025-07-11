@@ -17,8 +17,8 @@ const initialState: SearchState = {
 };
 
 export const executeSearch = createAsyncThunk('search/execute', async (query: string) => {
-    const results = await searchBooksApi(query);
-    return results;
+  const results = await searchBooksApi(query);
+  return results;
 });
 
 const searchSlice = createSlice({

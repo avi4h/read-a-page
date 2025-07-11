@@ -1,19 +1,19 @@
 
-import { DUMMY_BOOKS } from '../lib/dummyData';
+import { BOOKS_DATA } from '../lib/data';
 import { type BookPage } from '../types';
 
 // Simulates searching for books in a database/API
 export async function searchBooks(query: string): Promise<BookPage[]> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   if (!query) {
     return [];
   }
-  
+
   try {
     const lowercasedQuery = query.toLowerCase();
-    const results = DUMMY_BOOKS.filter(book => 
+    const results = BOOKS_DATA.filter(book =>
       book.title.toLowerCase().includes(lowercasedQuery) ||
       book.author.toLowerCase().includes(lowercasedQuery)
     );

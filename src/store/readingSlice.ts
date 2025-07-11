@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { type BookPage } from '../types';
-import { DUMMY_BOOKS } from '../lib/dummyData';
+import { BOOKS_DATA } from '../lib/data';
 import { RootState } from './store';
 
 interface ReadingState {
@@ -13,7 +13,7 @@ interface ReadingState {
 }
 
 const initialState: ReadingState = {
-  allBooks: DUMMY_BOOKS,
+  allBooks: BOOKS_DATA,
   currentBook: null,
   currentIndex: -1,
   isRevealed: false,
@@ -59,6 +59,14 @@ const readingSlice = createSlice({
         state.error = `The book with ID "${bookId}" could not be found. It might be a broken or outdated link.`;
         state.currentBook = null;
         state.currentIndex = -1;
+        
+        // Optionally, you could redirect to a random book instead:
+        // const randomIndex = Math.floor(Math.random() * state.allBooks.length);
+        // state.currentIndex = randomIndex;
+        // state.currentBook = state.allBooks[randomIndex];
+        // state.isRevealed = false;
+        // state.status = 'succeeded';
+        // state.error = null;
       }
     },
     revealBook: (state) => {
