@@ -49,7 +49,7 @@ export const getReadAPageUrl = (bookIds: string[]): string => {
   const lastBook = getLastOpenedBook();
   if (lastBook) {
     // Always return the content page, not the reveal page
-    return `/book/${lastBook.hashedId}`;
+    return `/book/${lastBook.id}`;
   }
   return getRandomBookUrl(bookIds);
 };

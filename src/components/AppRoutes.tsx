@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useUiStore } from '../stores/useUiStore';
 import { useReadingStore } from '../stores/useReadingStore';
 import { useSearchStore } from '../stores/useSearchStore';

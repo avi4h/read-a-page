@@ -14,4 +14,7 @@ The app lets you browse through a collection of book pages and read them in a cl
 
 #### Stack
 
-Built with React + TypeScript because thats what I know best. Using Redux for state management which might be overkill for this size project but whatever. Tailwind for styling.
+**Frontend**: React + TypeScript + Vite + Tailwind CSS + Zustand
+**Backend**: Supabase (PostgreSQL + REST API + Real-time)
+**Hosting**: Vercel (Frontend) + Supabase (Backend)
+**Search**: PostgreSQL full-text search with GIN indexes
