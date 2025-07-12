@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { type BookPage } from '../types';
 import { Trash2Icon, LogoLargeIcon } from './Icons';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { removeBookFromShelfOptimistic } from '../store/bookshelfSlice';
-import { setBookById } from '../store/readingSlice';
-import { setView } from '../store/uiSlice';
+import { useBookshelfStore } from '../stores/useBookshelfStore';
+import { createBookUrl } from '../lib/navigation';
+import { LoadingSpinner } from './LoadingSpinners';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -43,8 +43,13 @@ const BookCard: React.FC<{ book: BookPage; onSelect: () => void; onRemove: () =>
 };
 
 const BookshelfPage: React.FC = () => {
-    const dispatch = useAppDispatch();
-    const { books, status } = useAppSelector(state => state.bookshelf);
+    const navigate = useNavigate();
+    
+    // Use Zustand bookshelf store
+    const books = useBookshelfStore((state) => state.books);
+    const status = useBookshelfStore((state) => state.status);
+    const removeBookFromShelfOptimistic = useBookshelfStore((state) => state.removeBookFromShelfOptimistic);
+    
     const [currentPage, setCurrentPage] = useState(1);
     const [removingBooks, setRemovingBooks] = useState<Set<string>>(new Set());
     const isLoading = status === 'loading' || status === 'idle';
@@ -69,8 +74,8 @@ const BookshelfPage: React.FC = () => {
     }, [currentPage, currentBooks.length, totalPages]);
 
     const handleSelectBook = (bookId: string) => {
-        dispatch(setBookById(bookId));
-        dispatch(setView('reading'));
+        const bookUrl = createBookUrl(bookId);
+        navigate(bookUrl);
     };
 
     const handleRemove = (id: string) => {
@@ -78,7 +83,7 @@ const BookshelfPage: React.FC = () => {
         
         // Delay the actual removal to allow for animation
         setTimeout(() => {
-            dispatch(removeBookFromShelfOptimistic(id));
+            removeBookFromShelfOptimistic(id);
             setRemovingBooks(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);
@@ -96,7 +101,11 @@ const BookshelfPage: React.FC = () => {
     };
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-[calc(100vh-10rem)]"><div className="text-center p-8 animate-pulse">Loading your bookshelf...</div></div>;
+        return (
+            <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+                <LoadingSpinner size="lg" text="Loading your bookshelf..." />
+            </div>
+        );
     }
 
     if (books.length === 0) {

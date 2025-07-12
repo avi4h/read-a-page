@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setBookById } from '../store/readingSlice';
-import { setView } from '../store/uiSlice';
+import { useNavigate } from 'react-router-dom';
+import { useReadingStore } from '../stores/useReadingStore';
 import { type BookPage } from '../types';
+import { createBookUrl } from '../lib/navigation';
 
 const ITEMS_PER_PAGE = 24;
 
@@ -25,13 +25,13 @@ const CoverCard: React.FC<{ book: BookPage; onSelect: () => void; index: number 
 );
 
 const CoversPage: React.FC = () => {
-    const dispatch = useAppDispatch();
-    const allBooks = useAppSelector(state => state.reading.allBooks);
+    const navigate = useNavigate();
+    const allBooks = useReadingStore((state) => state.allBooks);
     const [currentPage, setCurrentPage] = useState(1);
 
     const handleSelectBook = (bookId: string) => {
-        dispatch(setBookById(bookId));
-        dispatch(setView('reading'));
+        const bookUrl = createBookUrl(bookId);
+        navigate(bookUrl);
     };
 
     const sortedBooks = useMemo(() =>

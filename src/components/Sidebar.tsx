@@ -1,10 +1,9 @@
-import React from 'react';
-import {
-    CloseIcon, HeartIcon, LogoIcon, LibraryIcon, SearchIcon, InfoIcon
-} from './Icons';
+import React, { useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CloseIcon, HeartIcon, LogoIcon, LibraryIcon, SearchIcon, InfoIcon } from './Icons';
 import { type View } from '../types';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setSidebarOpen, setView } from '../store/uiSlice';
+import { useUiStore } from '../stores/useUiStore';
+import { getNavigationUrl, navigateOptimized } from '../lib/navigation';
 
 interface SidebarProps { }
 
@@ -16,17 +15,22 @@ const SidebarLink: React.FC<{ icon: React.ReactNode; children: React.ReactNode; 
 );
 
 export const Sidebar: React.FC<SidebarProps> = () => {
-    const dispatch = useAppDispatch();
-    const { isOpen, activeView } = useAppSelector(state => ({
-        isOpen: state.ui.isSidebarOpen,
-        activeView: state.ui.view,
-    }));
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Use Zustand store
+    const isOpen = useUiStore((state) => state.isSidebarOpen);
+    const activeView = useUiStore((state) => state.view);
+    const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
-    const handleNavigate = (view: View) => {
-        dispatch(setView(view));
-    };
+    const handleNavigate = useCallback((view: View) => {
+        const url = getNavigationUrl(view);
+        navigateOptimized(navigate, location.pathname, url);
+        // Close sidebar after navigation on mobile
+        setSidebarOpen(false);
+    }, [navigate, location.pathname, setSidebarOpen]);
 
-    const onClose = () => dispatch(setSidebarOpen(false));
+    const onClose = useCallback(() => setSidebarOpen(false), [setSidebarOpen]);
 
     return (
         <>

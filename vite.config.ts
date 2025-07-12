@@ -1,8 +1,10 @@
 import path from 'path';
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig(() => {
     return {
+      plugins: [react()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
@@ -11,7 +13,11 @@ export default defineConfig(() => {
       build: {
         rollupOptions: {
           output: {
-            manualChunks: undefined,
+            manualChunks: {
+              vendor: ['react', 'react-dom'],
+              router: ['react-router-dom'],
+              zustand: ['zustand'],
+            },
           },
         },
       },

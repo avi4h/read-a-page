@@ -1,41 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { type BookPage } from '../types';
 import { HeartIcon, FacebookIcon, TwitterIcon, LinkIcon, CheckIcon, CopyIcon, AmazonIcon } from './Icons';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { changeBook, revealBook, hideBookInfo } from '../store/readingSlice';
-import { addBookToShelfOptimistic } from '../store/bookshelfSlice';
+import { useReadingStore } from '../stores/useReadingStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
+import { useBookshelfStore } from '../stores/useBookshelfStore';
+import { createBookUrl, createBookRevealUrl } from '../lib/navigation';
+import { ALL_BOOK_IDS } from '../lib/data';
+import { ContentLoadingSpinner, ButtonLoadingSpinner } from './LoadingSpinners';
 
-const LoadingSkeleton: React.FC = () => (
-    <div className="w-full max-w-2xl mx-auto space-y-4 animate-pulse">
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-    </div>
-);
+const LoadingSkeleton: React.FC = () => <ContentLoadingSpinner />;
 
 const BookInfoPanel: React.FC<{ bookPage: BookPage }> = ({ bookPage }) => {
-    const dispatch = useAppDispatch();
     const [isCopied, setIsCopied] = useState(false);
-    const { isSaved, isSaving } = useAppSelector(state => {
-        const bookshelf = state.bookshelf;
-        const savingStatus = state.bookshelf.status;
-        return {
-            isSaved: bookshelf.bookIds.includes(bookPage.id),
-            isSaving: savingStatus === 'loading',
-        };
-    });
+    
+    // Use Zustand bookshelf store
+    const isSaved = useBookshelfStore((state) => state.bookIds.includes(bookPage.id));
+    const isSaving = useBookshelfStore((state) => state.status === 'loading');
+    const addBookToShelfOptimistic = useBookshelfStore((state) => state.addBookToShelfOptimistic);
 
     const handleAddClick = () => {
         if (isSaved) return;
-        dispatch(addBookToShelfOptimistic(bookPage));
+        addBookToShelfOptimistic(bookPage);
     };
 
     const handleCopyLink = (e: React.MouseEvent) => {
         e.preventDefault();
         const baseUrl = window.location.origin;
-        const url = `${baseUrl}/book/${bookPage.id}`;
+        const url = `${baseUrl}${createBookUrl(bookPage.id)}`;
         navigator.clipboard.writeText(url).then(() => {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2500);
@@ -53,7 +45,7 @@ const BookInfoPanel: React.FC<{ bookPage: BookPage }> = ({ bookPage }) => {
     };
 
     const baseUrl = window.location.origin;
-    const shareUrl = `${baseUrl}/book/${bookPage.id}`;
+    const shareUrl = `${baseUrl}${createBookUrl(bookPage.id)}`;
     const shareText = `Check out this page from "${bookPage.title}"! Discover your next read on Read a Page.`;
     const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
@@ -79,7 +71,11 @@ const BookInfoPanel: React.FC<{ bookPage: BookPage }> = ({ bookPage }) => {
                                 : 'border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
                             }`}
                     >
-                        {isSaved ? <CheckIcon className="w-5 h-5 animate-bounce-in" /> : <HeartIcon className="w-5 h-5" />}
+                        {isSaving ? (
+                            <ButtonLoadingSpinner size="sm" />
+                        ) : (
+                            isSaved ? <CheckIcon className="w-5 h-5 animate-bounce-in" /> : <HeartIcon className="w-5 h-5" />
+                        )}
                         <span>{isSaving ? 'Saving...' : isSaved ? 'Added to Shelf' : 'Add to Shelf'}</span>
                     </button>
                     <a href={bookPage.amazonBookUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-[#FF9900] text-white font-semibold rounded-md hover:bg-[#E47911] focus:outline-none focus:ring-2 focus:ring-[#FF9900] focus:ring-offset-2 transition-all duration-200 transform hover:scale-105">
@@ -121,15 +117,15 @@ const BookInfoPanel: React.FC<{ bookPage: BookPage }> = ({ bookPage }) => {
 
 
 export const ReadingPane: React.FC = () => {
-    const dispatch = useAppDispatch();
-    const { bookPage, isLoading, error, isRevealed, readingSettings, currentIndex } = useAppSelector(state => ({
-        bookPage: state.reading.currentBook,
-        isLoading: state.reading.status === 'loading',
-        error: state.reading.error,
-        isRevealed: state.reading.isRevealed,
-        readingSettings: state.settings.reading,
-        currentIndex: state.reading.currentIndex
-    }));
+    const navigate = useNavigate();
+    
+    // Use Zustand stores
+    const bookPage = useReadingStore((state) => state.currentBook);
+    const isLoading = useReadingStore((state) => state.status === 'loading');
+    const error = useReadingStore((state) => state.error);
+    const isRevealed = useReadingStore((state) => state.isRevealed);
+    const currentIndex = useReadingStore((state) => state.currentIndex);
+    const readingSettings = useSettingsStore((state) => state.reading);
 
     // Scroll to top whenever the book changes (from any navigation method)
     useEffect(() => {
@@ -139,23 +135,48 @@ export const ReadingPane: React.FC = () => {
     }, [bookPage?.id]);
 
     const onNextBook = () => {
-        dispatch(changeBook(currentIndex + 1));
+        // Calculate next index with wraparound
+        const nextIndex = (currentIndex + 1) % ALL_BOOK_IDS.length;
+        const nextBookId = ALL_BOOK_IDS[nextIndex];
+        // Navigate to the next book URL, which will trigger route handler and update history
+        navigate(createBookUrl(nextBookId));
     };
     
-    const onReveal = () => dispatch(revealBook());
-    const onReadAgain = () => dispatch(hideBookInfo());
+    const onReveal = () => {
+        if (bookPage) {
+            // Navigate to the reveal URL for this book
+            navigate(createBookRevealUrl(bookPage.id));
+        }
+    };
+    
+    const onReadAgain = () => {
+        if (bookPage) {
+            // Navigate back to the non-reveal URL for this book
+            navigate(createBookUrl(bookPage.id));
+        }
+    };
 
     const primaryButtonClasses = "px-9 py-3 text-base font-semibold rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-teal-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-brand-teal-500 text-white hover:bg-brand-teal-600 dark:hover:bg-brand-teal-400 transform hover:scale-[1.02] active:scale-95";
     const secondaryButtonClasses = "px-9 py-3 text-base font-semibold rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transform hover:scale-[1.02] active:scale-95";
 
-    const fontSizeClasses = { sm: 'text-sm sm:text-base', base: 'text-base sm:text-lg', lg: 'text-lg sm:text-xl', xl: 'text-xl sm:text-2xl' };
-    const maxWidthClasses = { '2xl': 'max-w-2xl', '3xl': 'max-w-3xl', '4xl': 'max-w-4xl' };
+    const fontSizeClasses = { 
+        sm: 'text-sm sm:text-base', 
+        md: 'text-base sm:text-lg', 
+        lg: 'text-lg sm:text-xl', 
+        xl: 'text-xl sm:text-2xl',
+        '2xl': 'text-2xl sm:text-3xl'
+    };
+    const pageWidthClasses = { 
+        'narrow': 'max-w-2xl', 
+        'medium': 'max-w-3xl', 
+        'wide': 'max-w-4xl' 
+    };
 
     const hasContent = !error && bookPage;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 sm:px-6 lg:px-8 pt-16 pb-48">
-            <div className={`w-full ${maxWidthClasses[readingSettings.maxWidth]} mx-auto flex-grow flex flex-col justify-center transition-all duration-300 relative`}>
+            <div className={`w-full ${pageWidthClasses[readingSettings.pageWidth]} mx-auto flex-grow flex flex-col justify-center transition-all duration-300 relative`}>
 
                 {/* Loading State Overlay */}
                 {isLoading && (
@@ -197,19 +218,47 @@ export const ReadingPane: React.FC = () => {
                         {isRevealed ? (
                             <>
                                 <button onClick={onReadAgain} disabled={isLoading} className={secondaryButtonClasses}>
-                                    Read Page Again
+                                    {isLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <ButtonLoadingSpinner size="sm" />
+                                            Loading...
+                                        </span>
+                                    ) : (
+                                        'Read Page Again'
+                                    )}
                                 </button>
                                 <button onClick={onNextBook} disabled={isLoading} className={primaryButtonClasses}>
-                                    Next Book
+                                    {isLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <ButtonLoadingSpinner size="sm" />
+                                            Loading...
+                                        </span>
+                                    ) : (
+                                        'Next Book'
+                                    )}
                                 </button>
                             </>
                         ) : (
                             <>
-                                <button onClick={onNextBook} disabled={isLoading} className={secondaryButtonClasses}>
-                                    Another Page
-                                </button>
                                 <button onClick={onReveal} disabled={isLoading} className={primaryButtonClasses}>
-                                    Reveal Title & Author
+                                    {isLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <ButtonLoadingSpinner size="sm" />
+                                            Loading...
+                                        </span>
+                                    ) : (
+                                        'Reveal Title & Author'
+                                    )}
+                                </button>
+                                <button onClick={onNextBook} disabled={isLoading} className={secondaryButtonClasses}>
+                                    {isLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <ButtonLoadingSpinner size="sm" />
+                                            Loading...
+                                        </span>
+                                    ) : (
+                                        'Another Page'
+                                    )}
                                 </button>
                             </>
                         )}

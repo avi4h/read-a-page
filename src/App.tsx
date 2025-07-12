@@ -1,73 +1,101 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ReadingPane } from './components/ReadingPane';
 import { ReaderControls } from './components/ReaderControls';
-import BookshelfPage from './components/BookshelfPage';
-import SearchResultsPage from './components/SearchResultsPage';
-import CoversPage from './components/CoversPage';
-import AboutPage from './components/AboutPage';
-import { useAppSelector, useAppDispatch } from './store/hooks';
-import { closeAllPopovers, setView } from './store/uiSlice';
-import { fetchBookshelf } from './store/bookshelfSlice';
-import { loadInitialBook, setBookById } from './store/readingSlice';
+import { AppRoutes } from './components/AppRoutes';
+import { useUiStore } from './stores/useUiStore';
+import { useReadingStore } from './stores/useReadingStore';
+import { useSearchStore } from './stores/useSearchStore';
+import { useBookshelfStore } from './stores/useBookshelfStore';
+import { useUserPreferences } from './hooks/useUserPreferences';
+import { useRoutePreloader } from './hooks/useRoutePreloader';
+import { useNavigationPerformance, useScrollRestoration } from './hooks/useNavigationPerformance';
+import { PageLoadingSpinner } from './components/LoadingSpinners';
+
+// Lazy load page components for better performance
+const BookshelfPage = React.lazy(() => import('./components/BookshelfPage'));
+const SearchResultsPage = React.lazy(() => import('./components/SearchResultsPage'));
+const CoversPage = React.lazy(() => import('./components/CoversPage'));
+const AboutPage = React.lazy(() => import('./components/AboutPage'));
 
 const App: React.FC = () => {
-    const dispatch = useAppDispatch();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
 
-    const view = useAppSelector((state) => state.ui.view);
-    const theme = useAppSelector((state) => state.ui.theme);
-    const currentBook = useAppSelector((state) => state.reading.currentBook);
+    // Load user preferences on app startup
+    useUserPreferences();
+    
+    // Preload route components for better performance
+    useRoutePreloader();
+    
+    // Monitor navigation performance
+    useNavigationPerformance();
+    
+    // Optimize scroll restoration
+    useScrollRestoration();
+
+    // Use Zustand stores
+    const view = useUiStore((state) => state.view);
+    const theme = useUiStore((state) => state.theme);
+    const closeAllPopovers = useUiStore((state) => state.closeAllPopovers);
+    const currentBook = useReadingStore((state) => state.currentBook);
+    const setSearchQuery = useSearchStore((state) => state.setSearchQuery);
+    const fetchBookshelf = useBookshelfStore((state) => state.fetchBookshelf);
 
     // Initial data loading for the bookshelf
     useEffect(() => {
-        dispatch(fetchBookshelf());
-    }, [dispatch]);
+        fetchBookshelf();
+    }, [fetchBookshelf]);
 
-    // One-time effect to handle routing from a shared URL
+    // Handle search query from URL params
     useEffect(() => {
-        const path = window.location.pathname;
-        const match = path.match(/^\/book\/([a-zA-Z0-9]{12})$/);
-        if (match && match[1]) {
-            const bookId = match[1];
-            dispatch(setView('reading'));
-            dispatch(setBookById(bookId));
-            
-            // Update the URL to clean up any query parameters without causing a reload
-            if (window.location.search || window.location.hash) {
-                const newUrl = `${window.location.origin}/book/${bookId}`;
-                window.history.replaceState({}, '', newUrl);
+        if (location.pathname === '/search') {
+            const query = searchParams.get('query');
+            if (query) {
+                setSearchQuery(query);
             }
         }
-    }, [dispatch]);
+    }, [location.pathname, searchParams, setSearchQuery]);
 
-    // Load initial book when entering reading view, if not loaded via URL
-    useEffect(() => {
-        if (view === 'reading') {
-            dispatch(loadInitialBook());
-        }
-    }, [view, dispatch]);
-
-    // Theme side-effect to update DOM and localStorage
+    // Theme side-effect to update DOM (localStorage handled by Redux)
     useEffect(() => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
-        localStorage.setItem('theme', theme);
     }, [theme]);
 
     return (
-        <div className="relative min-h-screen" onClick={() => dispatch(closeAllPopovers())}>
-            <Header />
-            <Sidebar />
-            <main key={view} className="animate-fade-in">
-                <div className="transition-all duration-300 ease-in-out">
-                    {view === 'reading' && <ReadingPane />}
-                    {view === 'bookshelf' && <BookshelfPage />}
-                    {view === 'search' && <SearchResultsPage />}
-                    {view === 'covers' && <CoversPage />}
-                    {view === 'about' && <AboutPage />}
-                </div>
-            </main>
-            {view === 'reading' && currentBook && <ReaderControls />}
+        <div className="relative min-h-screen" onClick={closeAllPopovers}>
+            <AppRoutes>
+                <Header />
+                <Sidebar />
+                <main className="animate-fade-in">
+                    <div className="transition-all duration-300 ease-in-out">
+                        {view === 'reading' && <ReadingPane />}
+                        {view === 'bookshelf' && (
+                            <Suspense fallback={<PageLoadingSpinner />}>
+                                <BookshelfPage />
+                            </Suspense>
+                        )}
+                        {view === 'search' && (
+                            <Suspense fallback={<PageLoadingSpinner />}>
+                                <SearchResultsPage />
+                            </Suspense>
+                        )}
+                        {view === 'covers' && (
+                            <Suspense fallback={<PageLoadingSpinner />}>
+                                <CoversPage />
+                            </Suspense>
+                        )}
+                        {view === 'about' && (
+                            <Suspense fallback={<PageLoadingSpinner />}>
+                                <AboutPage />
+                            </Suspense>
+                        )}
+                    </div>
+                </main>
+                {view === 'reading' && currentBook && <ReaderControls />}
+            </AppRoutes>
         </div>
     );
 };

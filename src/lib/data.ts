@@ -548,3 +548,6 @@ export const BOOKS_DATA: BookPage[] = [
         submittedBy: "Admin"
     }
 ];
+
+// Export all book IDs for hash mapping
+export const ALL_BOOK_IDS = BOOKS_DATA.map(book => book.id);

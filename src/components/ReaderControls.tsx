@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontIcon, SettingsIcon, ChevronLeftIcon, ChevronRightIcon, AlignLeftIcon, AlignJustifyIcon } from './Icons';
 import { type ReadingSettings } from '../types';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { updateReadingSettings } from '../store/settingsSlice';
-import { setActivePopover } from '../store/uiSlice';
-import { changeBook } from '../store/readingSlice';
+import { useSettingsStore } from '../stores/useSettingsStore';
+import { useUiStore } from '../stores/useUiStore';
+import { useReadingStore } from '../stores/useReadingStore';
+import { createBookUrl } from '../lib/navigation';
+import { ALL_BOOK_IDS } from '../lib/data';
 
 interface ReaderControlsProps { }
 
@@ -36,22 +38,36 @@ const ControlButton: React.FC<{
 
 
 export const ReaderControls: React.FC<ReaderControlsProps> = () => {
-    const dispatch = useAppDispatch();
-    const settings = useAppSelector(state => state.settings.reading);
-    const activePopover = useAppSelector(state => state.ui.activePopover);
-    const { currentIndex, isLoading } = useAppSelector(state => ({
-        currentIndex: state.reading.currentIndex,
-        isLoading: state.reading.status === 'loading',
-    }));
+    const navigate = useNavigate();
+    
+    // Use Zustand stores
+    const settings = useSettingsStore((state) => state.reading);
+    const updateReadingSettings = useSettingsStore((state) => state.updateReadingSettings);
+    const activePopover = useUiStore((state) => state.activePopover);
+    const setActivePopover = useUiStore((state) => state.setActivePopover);
+    const currentIndex = useReadingStore((state) => state.currentIndex);
+    const isLoading = useReadingStore((state) => state.status === 'loading');
 
-    const onUpdateSettings = (newSettings: Partial<ReadingSettings>) => dispatch(updateReadingSettings(newSettings));
-    const onTogglePopover = (popover: 'font' | 'settings') => dispatch(setActivePopover(popover));
-    const onNext = () => dispatch(changeBook(currentIndex + 1));
-    const onPrevious = () => dispatch(changeBook(currentIndex - 1));
+    const onUpdateSettings = (newSettings: Partial<ReadingSettings>) => updateReadingSettings(newSettings);
+    const onTogglePopover = (popover: 'font' | 'settings') => setActivePopover(popover);
+    
+    const onNext = () => {
+        // Calculate next index with wraparound
+        const nextIndex = (currentIndex + 1) % ALL_BOOK_IDS.length;
+        const nextBookId = ALL_BOOK_IDS[nextIndex];
+        navigate(createBookUrl(nextBookId));
+    };
+    
+    const onPrevious = () => {
+        // Calculate previous index with wraparound
+        const prevIndex = currentIndex <= 0 ? ALL_BOOK_IDS.length - 1 : currentIndex - 1;
+        const prevBookId = ALL_BOOK_IDS[prevIndex];
+        navigate(createBookUrl(prevBookId));
+    };
 
     const iconStyle = "w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors";
     const activeIconStyle = "text-brand-teal-600 dark:text-brand-teal-400";
-    const fontSizes: ReadingSettings['fontSize'][] = ['sm', 'base', 'lg', 'xl'];
+    const fontSizes: ReadingSettings['fontSize'][] = ['sm', 'md', 'lg', 'xl', '2xl'];
 
     const handleToggle = (e: React.MouseEvent, popover: 'font' | 'settings') => {
         e.stopPropagation();
@@ -106,9 +122,9 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
                             <div>
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 text-center">Page Width</h4>
                                 <div className="flex gap-2">
-                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '2xl' })} isActive={settings.maxWidth === '2xl'}>Narrow</ControlButton>
-                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '3xl' })} isActive={settings.maxWidth === '3xl'}>Medium</ControlButton>
-                                    <ControlButton onClick={() => onUpdateSettings({ maxWidth: '4xl' })} isActive={settings.maxWidth === '4xl'}>Wide</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ pageWidth: 'narrow' })} isActive={settings.pageWidth === 'narrow'}>Narrow</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ pageWidth: 'medium' })} isActive={settings.pageWidth === 'medium'}>Medium</ControlButton>
+                                    <ControlButton onClick={() => onUpdateSettings({ pageWidth: 'wide' })} isActive={settings.pageWidth === 'wide'}>Wide</ControlButton>
                                 </div>
                             </div>
                         </div>

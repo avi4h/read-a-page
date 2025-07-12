@@ -1,34 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { type BookPage } from '../types';
 import { HeartIcon, CheckIcon, SearchIcon, CopyIcon, CloseIcon, LogoLargeIcon } from './Icons';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { addBookToShelfOptimistic } from '../store/bookshelfSlice';
-import { setSearchQuery, executeSearch } from '../store/searchSlice';
-import { setView } from '../store/uiSlice';
-import { setBookById } from '../store/readingSlice';
+import { useSearchStore } from '../stores/useSearchStore';
+import { useBookshelfStore } from '../stores/useBookshelfStore';
+import { createBookUrl, createSearchUrl } from '../lib/navigation';
+import { LoadingSpinner, ButtonLoadingSpinner } from './LoadingSpinners';
 
 const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
-    const dispatch = useAppDispatch();
-    const { isSaved, isSaving } = useAppSelector(state => ({
-        isSaved: state.bookshelf.bookIds.includes(book.id),
-        isSaving: state.bookshelf.status === 'loading',
-    }));
+    const navigate = useNavigate();
+    
+    // Use Zustand bookshelf store
+    const isSaved = useBookshelfStore((state) => state.bookIds.includes(book.id));
+    const isSaving = useBookshelfStore((state) => state.status === 'loading');
+    const addBookToShelfOptimistic = useBookshelfStore((state) => state.addBookToShelfOptimistic);
+    
     const [isCopied, setIsCopied] = useState(false);
 
     const handleSelectBook = () => {
-        dispatch(setBookById(book.id));
-        dispatch(setView('reading'));
+        const bookUrl = createBookUrl(book.id);
+        navigate(bookUrl);
     };
 
     const handleAddClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isSaved) return;
-        dispatch(addBookToShelfOptimistic(book));
+        addBookToShelfOptimistic(book);
     };
 
     const handleCopyLink = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const url = `${window.location.origin}/book/${book.id}`;
+        const url = `${window.location.origin}${createBookUrl(book.id)}`;
         navigator.clipboard.writeText(url).then(() => {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2500);
@@ -76,8 +78,14 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
                                 : 'border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
                             }`}
                     >
-                        {isSaved ? <CheckIcon className="w-4 h-4 animate-bounce-in" /> : <HeartIcon className="w-4 h-4" />}
-                        <span>{isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}</span>
+                        {isSaving ? (
+                            <ButtonLoadingSpinner size="sm" />
+                        ) : (
+                            <>
+                                {isSaved ? <CheckIcon className="w-4 h-4 animate-bounce-in" /> : <HeartIcon className="w-4 h-4" />}
+                                <span>{isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}</span>
+                            </>
+                        )}
                     </button>
                 </div>
                 <div className="relative">
@@ -100,35 +108,53 @@ const SearchResultCard: React.FC<{ book: BookPage }> = ({ book }) => {
 };
 
 const LoadingSkeleton: React.FC = () => (
-    <div className="space-y-4 animate-pulse">
-        {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-6 p-4 bg-white dark:bg-slate-800/50 rounded-lg">
-                <div className="w-24 h-36 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
-                <div className="flex-grow space-y-3 py-1">
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/5"></div>
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/5"></div>
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-4/5"></div>
+    <div className="space-y-4">
+        <div className="flex justify-center py-8">
+            <LoadingSpinner size="lg" text="Searching books..." />
+        </div>
+        <div className="space-y-4 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex gap-6 p-4 bg-white dark:bg-slate-800/50 rounded-lg">
+                    <div className="w-24 h-36 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                    <div className="flex-grow space-y-3 py-1">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/5"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/5"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-4/5"></div>
+                    </div>
                 </div>
-            </div>
-        ))}
+            ))}
+        </div>
     </div>
 );
 
 
 const SearchResultsPage: React.FC = () => {
-    const dispatch = useAppDispatch();
-    const { query, results, status, error } = useAppSelector(state => ({
-        query: state.search.query,
-        results: state.search.results,
-        status: state.search.status,
-        error: state.search.error,
-    }));
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    
+    // Use Zustand store
+    const query = useSearchStore((state) => state.query);
+    const results = useSearchStore((state) => state.results);
+    const status = useSearchStore((state) => state.status);
+    const error = useSearchStore((state) => state.error);
+    const setSearchQuery = useSearchStore((state) => state.setSearchQuery);
+    const executeSearch = useSearchStore((state) => state.executeSearch);
 
     const [localQuery, setLocalQuery] = useState(query);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Sync with URL query parameter
+    useEffect(() => {
+        const urlQuery = searchParams.get('query');
+        if (urlQuery && urlQuery !== query) {
+            setSearchQuery(urlQuery);
+            executeSearch(urlQuery);
+            setLocalQuery(urlQuery);
+        }
+    }, [searchParams, query, setSearchQuery, executeSearch]);
 
     useEffect(() => {
         setLocalQuery(query);
@@ -142,8 +168,9 @@ const SearchResultsPage: React.FC = () => {
         e.preventDefault();
         const trimmedQuery = localQuery.trim();
         if (trimmedQuery) {
-            dispatch(setSearchQuery(trimmedQuery));
-            dispatch(executeSearch(trimmedQuery));
+            // Navigate to search URL with query parameter
+            const searchUrl = createSearchUrl(trimmedQuery);
+            navigate(searchUrl);
             setCurrentPage(1);
         }
     };
@@ -194,7 +221,10 @@ const SearchResultsPage: React.FC = () => {
                         <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                             <button
                                 type="button"
-                                onClick={() => setLocalQuery('')}
+                                onClick={() => {
+                                    setLocalQuery('');
+                                    navigate('/search');
+                                }}
                                 className="p-1 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none"
                                 aria-label="Clear search"
                             >

@@ -9,10 +9,10 @@ export interface BookPage {
 }
 
 export interface ReadingSettings {
-  fontSize: 'sm' | 'base' | 'lg' | 'xl';
+  fontSize: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   fontFamily: 'serif' | 'sans';
-  textAlign: 'justify' | 'left';
-  maxWidth: '2xl' | '3xl' | '4xl';
+  textAlign: 'justify' | 'left' | 'center';
+  pageWidth: 'narrow' | 'medium' | 'wide';
 }
 
 export type View = 'reading' | 'bookshelf' | 'search' | 'covers' | 'about';
