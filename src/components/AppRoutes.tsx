@@ -8,6 +8,7 @@ import { ALL_BOOK_IDS, BOOKS_DATA } from '../lib/data';
 import { getRootRouteUrl, setCachedBookIds } from '../lib/navigation';
 import { addBookToHistory } from '../lib/userPreferences';
 import { AdminPage } from './AdminPage';
+import { NotFoundPage } from './NotFoundPage';
 
 // Set cached book IDs for navigation optimization
 setCachedBookIds(ALL_BOOK_IDS);
@@ -64,14 +65,17 @@ interface RouteHandlerProps {
     children: React.ReactNode;
 }
 
-// Component to handle root route - redirect based on history
-const RandomBookRedirect: React.FC = () => {
+// Component to handle root route - redirect to "Read a Page" functionality
+const ReadAPageRedirect: React.FC = () => {
     const navigate = useNavigate();
+    const setView = useUiStore((state) => state.setView);
 
     React.useEffect(() => {
+        // Set the view to 'reading' to show "Read a Page" as active in header
+        setView('reading');
         const targetUrl = getRootRouteUrl(ALL_BOOK_IDS);
         navigate(targetUrl, { replace: true });
-    }, [navigate]);
+    }, [navigate, setView]);
 
     return null;
 };
@@ -207,9 +211,11 @@ export const AppRoutes: React.FC<RouteHandlerProps> = ({ children }) => {
                 {/* Admin route for Supabase management */}
                 <Route path="/admin" element={<AdminPage />} />
 
-                {/* Default route - redirect to random book */}
-                <Route path="/" element={<RandomBookRedirect />} />
-                <Route path="*" element={<RandomBookRedirect />} />
+                {/* Default route - redirect to "Read a Page" functionality */}
+                <Route path="/" element={<ReadAPageRedirect />} />
+                
+                {/* 404 Not Found route for all other paths */}
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
             {children}
         </RouteErrorBoundary>

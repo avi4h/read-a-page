@@ -71,8 +71,8 @@ const App: React.FC = () => {
     return (
         <div className="relative min-h-screen" onClick={closeAllPopovers}>
             <AppRoutes>
-                <Header />
-                <Sidebar />
+                {view !== 'notfound' && view !== 'admin' && <Header />}
+                {view !== 'notfound' && view !== 'admin' && <Sidebar />}
                 <main className="animate-fade-in">
                     <div className="transition-all duration-300 ease-in-out">
                         {view === 'reading' && <ReadingPane />}

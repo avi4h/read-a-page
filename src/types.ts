@@ -15,4 +15,4 @@ export interface ReadingSettings {
   pageWidth: 'narrow' | 'medium' | 'wide';
 }
 
-export type View = 'reading' | 'bookshelf' | 'search' | 'covers' | 'about';
+export type View = 'reading' | 'bookshelf' | 'search' | 'covers' | 'about' | 'notfound' | 'admin';
