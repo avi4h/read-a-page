@@ -7,6 +7,7 @@ import { getBookIdFromHash } from '../lib/hash';
 import { ALL_BOOK_IDS, BOOKS_DATA } from '../lib/data';
 import { getRootRouteUrl, setCachedBookIds } from '../lib/navigation';
 import { addBookToHistory } from '../lib/userPreferences';
+import { AdminPage } from './AdminPage';
 
 // Set cached book IDs for navigation optimization
 setCachedBookIds(ALL_BOOK_IDS);
@@ -202,10 +203,13 @@ export const AppRoutes: React.FC<RouteHandlerProps> = ({ children }) => {
                 <Route path="/mybookshelf" element={<ViewRoute view="mybookshelf" />} />
                 <Route path="/about" element={<ViewRoute view="about" />} />
                 <Route path="/search" element={<SearchRoute />} />
+                
+                {/* Admin route for Supabase management */}
+                <Route path="/admin" element={<AdminPage />} />
 
                 {/* Default route - redirect to random book */}
                 <Route path="/" element={<RandomBookRedirect />} />
-                <Route path="*" element={<Navigate to="/covers" replace />} />
+                <Route path="*" element={<RandomBookRedirect />} />
             </Routes>
             {children}
         </RouteErrorBoundary>
