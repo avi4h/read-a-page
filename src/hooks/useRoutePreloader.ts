@@ -24,38 +24,3 @@ export const useRoutePreloader = () => {
     preloadRoutes();
   }, []);
 };
-
-/**
- * Hook to preload a specific route component
- */
-export const usePreloadRoute = (routeName: string, shouldPreload: boolean = true) => {
-  useEffect(() => {
-    if (!shouldPreload) return;
-
-    const preloadRoute = async () => {
-      try {
-        switch (routeName) {
-          case 'bookshelf':
-            await import('../components/BookshelfPage');
-            break;
-          case 'search':
-            await import('../components/SearchResultsPage');
-            break;
-          case 'covers':
-            await import('../components/CoversPage');
-            break;
-          case 'about':
-            await import('../components/AboutPage');
-            break;
-          default:
-            break;
-        }
-      } catch (error) {
-        console.warn(`Failed to preload ${routeName} route:`, error);
-      }
-    };
-
-    const timeoutId = setTimeout(preloadRoute, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [routeName, shouldPreload]);
-};

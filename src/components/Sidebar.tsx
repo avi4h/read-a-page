@@ -23,11 +23,18 @@ export const Sidebar: React.FC<SidebarProps> = () => {
     const activeView = useUiStore((state) => state.view);
     const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
-    const handleNavigate = useCallback((view: View) => {
-        const url = getNavigationUrl(view);
-        navigateOptimized(navigate, location.pathname, url);
-        // Close sidebar after navigation on mobile
-        setSidebarOpen(false);
+    const handleNavigate = useCallback(async (view: View) => {
+        try {
+            const url = await getNavigationUrl(view);
+            navigateOptimized(navigate, location.pathname, url);
+            // Close sidebar after navigation on mobile
+            setSidebarOpen(false);
+        } catch (error) {
+            console.error('Sidebar navigation failed:', error);
+            // Fallback to covers if navigation fails
+            navigate('/covers');
+            setSidebarOpen(false);
+        }
     }, [navigate, location.pathname, setSidebarOpen]);
 
     const onClose = useCallback(() => setSidebarOpen(false), [setSidebarOpen]);

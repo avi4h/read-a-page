@@ -6,7 +6,6 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUiStore } from '../stores/useUiStore';
 import { useReadingStore } from '../stores/useReadingStore';
 import { createBookUrl } from '../lib/navigation';
-import { ALL_BOOK_IDS } from '../lib/data';
 
 interface ReaderControlsProps { }
 
@@ -46,6 +45,7 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
     const activePopover = useUiStore((state) => state.activePopover);
     const setActivePopover = useUiStore((state) => state.setActivePopover);
     const currentIndex = useReadingStore((state) => state.currentIndex);
+    const allBookIds = useReadingStore((state) => state.allBookIds);
     const isLoading = useReadingStore((state) => state.status === 'loading');
 
     const onUpdateSettings = (newSettings: Partial<ReadingSettings>) => updateReadingSettings(newSettings);
@@ -53,15 +53,15 @@ export const ReaderControls: React.FC<ReaderControlsProps> = () => {
     
     const onNext = () => {
         // Calculate next index with wraparound
-        const nextIndex = (currentIndex + 1) % ALL_BOOK_IDS.length;
-        const nextBookId = ALL_BOOK_IDS[nextIndex];
+        const nextIndex = (currentIndex + 1) % allBookIds.length;
+        const nextBookId = allBookIds[nextIndex];
         navigate(createBookUrl(nextBookId));
     };
     
     const onPrevious = () => {
         // Calculate previous index with wraparound
-        const prevIndex = currentIndex <= 0 ? ALL_BOOK_IDS.length - 1 : currentIndex - 1;
-        const prevBookId = ALL_BOOK_IDS[prevIndex];
+        const prevIndex = currentIndex <= 0 ? allBookIds.length - 1 : currentIndex - 1;
+        const prevBookId = allBookIds[prevIndex];
         navigate(createBookUrl(prevBookId));
     };
 

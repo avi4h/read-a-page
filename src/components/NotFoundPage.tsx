@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUiStore } from '../stores/useUiStore';
 import { getNewRandomBookUrl } from '../lib/navigation';
-import { ALL_BOOK_IDS } from '../lib/data';
 
 export const NotFoundPage: React.FC = () => {
     const navigate = useNavigate();
@@ -13,9 +12,14 @@ export const NotFoundPage: React.FC = () => {
         setView('notfound' as any);
     }, [setView]);
 
-    const handleReadAPage = () => {
-        const randomBookUrl = getNewRandomBookUrl(ALL_BOOK_IDS);
-        navigate(randomBookUrl, { replace: true });
+    const handleReadAPage = async () => {
+        try {
+            const randomBookUrl = await getNewRandomBookUrl();
+            navigate(randomBookUrl, { replace: true });
+        } catch (error) {
+            console.error('Failed to get random book URL:', error);
+            navigate('/covers', { replace: true });
+        }
     };
 
     const handleGoToCovers = () => {

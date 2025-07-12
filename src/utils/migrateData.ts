@@ -1,65 +1,24 @@
 import { supabase } from '../lib/supabase'
-import { BOOKS_DATA } from '../lib/data'
 
 /**
  * Migration script to transfer existing book data from static file to Supabase database
- * Run this once after setting up your Supabase database
+ * 
+ * NOTE: This migration script is now disabled since the static data file has been removed.
+ * The application now uses Supabase exclusively for all book data.
+ * 
+ * If you need to re-run migration, restore the data.ts file temporarily.
  */
-export async function migrateExistingData() {
-  console.log('🚀 Starting data migration to Supabase...')
-  console.log(`📚 Found ${BOOKS_DATA.length} books to migrate`)
-  
-  let successCount = 0
-  let errorCount = 0
-  
-  for (const book of BOOKS_DATA) {
-    try {
-      console.log(`📖 Migrating: ${book.title} by ${book.author}`)
-      
-      const { error } = await supabase
-        .from('books')
-        .insert({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          page_content: book.pageContent,
-          cover_image_url: book.coverImageUrl,
-          amazon_book_url: book.amazonBookUrl,
-          submitted_by: book.submittedBy
-        })
 
-      if (error) {
-        console.error(`❌ Failed to migrate book ${book.id}:`, error.message)
-        errorCount++
-      } else {
-        console.log(`✅ Successfully migrated: ${book.title}`)
-        successCount++
-      }
-    } catch (err) {
-      console.error(`💥 Unexpected error migrating ${book.id}:`, err)
-      errorCount++
-    }
-  }
-  
-  console.log(`\n📊 Migration Summary:`)
-  console.log(`✅ Successful: ${successCount}`)
-  console.log(`❌ Failed: ${errorCount}`)
-  console.log(`📚 Total: ${BOOKS_DATA.length}`)
-  
-  if (errorCount === 0) {
-    console.log(`🎉 All books migrated successfully!`)
-  } else {
-    console.log(`⚠️  Some books failed to migrate. Check errors above.`)
-  }
+// Disabled migration functions - restore data.ts if needed
+export async function migrateExistingData() {
+  console.log('❌ Migration disabled: data.ts file has been removed.')
+  console.log('💡 To re-enable migration, restore the data.ts file and uncomment the migration functions.')
+  return false
 }
 
-/**
- * Test connection to Supabase
- */
 export async function testSupabaseConnection() {
   try {
     console.log('🔌 Testing Supabase connection...')
-    
     const { error } = await supabase
       .from('books')
       .select('count')
@@ -72,8 +31,8 @@ export async function testSupabaseConnection() {
     
     console.log('✅ Supabase connection successful!')
     return true
-  } catch (err) {
-    console.error('💥 Connection test failed:', err)
+  } catch (error) {
+    console.error('❌ Connection failed:', error)
     return false
   }
 }

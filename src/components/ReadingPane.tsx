@@ -6,7 +6,6 @@ import { useReadingStore } from '../stores/useReadingStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useBookshelfStore } from '../stores/useBookshelfStore';
 import { createBookUrl, createBookRevealUrl } from '../lib/navigation';
-import { ALL_BOOK_IDS } from '../lib/data';
 import { ContentLoadingSpinner, ButtonLoadingSpinner } from './LoadingSpinners';
 
 const LoadingSkeleton: React.FC = () => <ContentLoadingSpinner />;
@@ -125,6 +124,7 @@ export const ReadingPane: React.FC = () => {
     const error = useReadingStore((state) => state.error);
     const isRevealed = useReadingStore((state) => state.isRevealed);
     const currentIndex = useReadingStore((state) => state.currentIndex);
+    const allBookIds = useReadingStore((state) => state.allBookIds);
     const readingSettings = useSettingsStore((state) => state.reading);
 
     // Scroll to top whenever the book changes (from any navigation method)
@@ -136,8 +136,8 @@ export const ReadingPane: React.FC = () => {
 
     const onNextBook = () => {
         // Calculate next index with wraparound
-        const nextIndex = (currentIndex + 1) % ALL_BOOK_IDS.length;
-        const nextBookId = ALL_BOOK_IDS[nextIndex];
+        const nextIndex = (currentIndex + 1) % allBookIds.length;
+        const nextBookId = allBookIds[nextIndex];
         // Navigate to the next book URL, which will trigger route handler and update history
         navigate(createBookUrl(nextBookId));
     };

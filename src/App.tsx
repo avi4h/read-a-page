@@ -11,7 +11,6 @@ import { useSearchStore } from './stores/useSearchStore';
 import { useBookshelfStore } from './stores/useBookshelfStore';
 import { useUserPreferences } from './hooks/useUserPreferences';
 import { useRoutePreloader } from './hooks/useRoutePreloader';
-import { useNavigationPerformance, useScrollRestoration } from './hooks/useNavigationPerformance';
 import { PageLoadingSpinner } from './components/LoadingSpinners';
 
 // Lazy load page components for better performance
@@ -29,29 +28,26 @@ const App: React.FC = () => {
     
     // Preload route components for better performance
     useRoutePreloader();
-    
-    // Monitor navigation performance
-    useNavigationPerformance();
-    
-    // Optimize scroll restoration
-    useScrollRestoration();
 
     // Use Zustand stores
     const view = useUiStore((state) => state.view);
     const theme = useUiStore((state) => state.theme);
     const closeAllPopovers = useUiStore((state) => state.closeAllPopovers);
     const currentBook = useReadingStore((state) => state.currentBook);
+    const initializeStore = useReadingStore((state) => state.initializeStore);
     const setSearchQuery = useSearchStore((state) => state.setSearchQuery);
     const fetchBookshelf = useBookshelfStore((state) => state.fetchBookshelf);
     const initializeFromLocalStorage = useBookshelfStore((state) => state.initializeFromLocalStorage);
 
-    // Initial data loading for the bookshelf
+    // Initialize reading store and bookshelf data loading
     useEffect(() => {
-        // First, try to load from localStorage for immediate UI update
+        // Initialize reading store with books from Supabase
+        initializeStore();
+        
+        // Initialize bookshelf from localStorage then fetch from database
         initializeFromLocalStorage();
-        // Then fetch from database to ensure we have the latest data
         fetchBookshelf();
-    }, [fetchBookshelf, initializeFromLocalStorage]);
+    }, [initializeStore, fetchBookshelf, initializeFromLocalStorage]);
 
     // Handle search query from URL params
     useEffect(() => {

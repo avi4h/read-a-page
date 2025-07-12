@@ -1,6 +1,4 @@
-import { type BookPage } from '../types';
-
-export const BOOKS_DATA: BookPage[] = [
+books = [
     {
         id: "ulysses",
         title: "Ulysses",
@@ -547,7 +545,4 @@ export const BOOKS_DATA: BookPage[] = [
         amazonBookUrl: "https://www.amazon.com/Heart-Darkness-Joseph-Conrad/dp/1673303056",
         submittedBy: "Admin"
     }
-];
-
-// Export all book IDs for hash mapping
-export const ALL_BOOK_IDS = BOOKS_DATA.map(book => book.id);
+]

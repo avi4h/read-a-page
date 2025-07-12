@@ -8,7 +8,6 @@ import {
     getNewRandomBookUrl,
     navigateOptimized
 } from '../lib/navigation';
-import { ALL_BOOK_IDS } from '../lib/data';
 
 const NavLink: React.FC<{ onClick: () => void; children: React.ReactNode, active?: boolean, disabled?: boolean }> = ({ onClick, children, active, disabled }) => (
     <button
@@ -30,15 +29,27 @@ export const Header: React.FC = () => {
     const toggleTheme = useUiStore((state) => state.toggleTheme);
     const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
-    const handleNavigate = useCallback((view: View) => {
-        const url = getNavigationUrl(view);
-        navigateOptimized(navigate, location.pathname, url);
+    const handleNavigate = useCallback(async (view: View) => {
+        try {
+            const url = await getNavigationUrl(view);
+            navigateOptimized(navigate, location.pathname, url);
+        } catch (error) {
+            console.error('Navigation failed:', error);
+            // Fallback to covers if navigation fails
+            navigate('/covers');
+        }
     }, [navigate, location.pathname]);
 
-    const handleLogoClick = useCallback(() => {
-        // Logo click always gets a new random book
-        const randomBookUrl = getNewRandomBookUrl(ALL_BOOK_IDS);
-        navigateOptimized(navigate, location.pathname, randomBookUrl);
+    const handleLogoClick = useCallback(async () => {
+        try {
+            // Logo click always gets a new random book
+            const randomBookUrl = await getNewRandomBookUrl();
+            navigateOptimized(navigate, location.pathname, randomBookUrl);
+        } catch (error) {
+            console.error('Logo navigation failed:', error);
+            // Fallback to covers if navigation fails
+            navigate('/covers');
+        }
     }, [navigate, location.pathname]);
 
     return (

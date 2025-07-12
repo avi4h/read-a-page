@@ -1,5 +1,4 @@
 
-import { BOOKS_DATA } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { type BookPage } from '../types';
 
@@ -16,39 +15,21 @@ function dbRowToBookPage(row: any): BookPage {
   };
 }
 
-// Configuration to toggle between static data and Supabase
-const USE_SUPABASE = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+// Check if Supabase is properly configured
+function checkSupabaseConfig(): void {
+  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    throw new Error('Supabase configuration is missing. Please check your environment variables.');
+  }
+}
 
-// Simulates searching for books in a database/API
+// Search for books in Supabase database
 export async function searchBooks(query: string): Promise<BookPage[]> {
   if (!query) {
     return [];
   }
 
-  // Use Supabase if configured, otherwise fall back to static data
-  if (USE_SUPABASE) {
-    return searchBooksFromSupabase(query);
-  } else {
-    return searchBooksFromStaticData(query);
-  }
-}
-
-// Search using static data (original implementation)
-async function searchBooksFromStaticData(query: string): Promise<BookPage[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  try {
-    const lowercasedQuery = query.toLowerCase();
-    const results = BOOKS_DATA.filter(book =>
-      book.title.toLowerCase().includes(lowercasedQuery) ||
-      book.author.toLowerCase().includes(lowercasedQuery)
-    );
-    return results;
-  } catch (error) {
-    console.error("Error searching books:", error);
-    throw new Error("The search could not be completed.");
-  }
+  checkSupabaseConfig();
+  return searchBooksFromSupabase(query);
 }
 
 // Search using Supabase database
@@ -72,20 +53,10 @@ async function searchBooksFromSupabase(query: string): Promise<BookPage[]> {
   }
 }
 
-// Get all books
+// Get all books from Supabase
 export async function getAllBooks(): Promise<BookPage[]> {
-  if (USE_SUPABASE) {
-    return getAllBooksFromSupabase();
-  } else {
-    return getAllBooksFromStaticData();
-  }
-}
-
-// Get all books from static data
-async function getAllBooksFromStaticData(): Promise<BookPage[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return BOOKS_DATA;
+  checkSupabaseConfig();
+  return getAllBooksFromSupabase();
 }
 
 // Get all books from Supabase
@@ -108,22 +79,32 @@ async function getAllBooksFromSupabase(): Promise<BookPage[]> {
   }
 }
 
-// Get single book by ID
-export async function getBookById(id: string): Promise<BookPage | null> {
-  if (USE_SUPABASE) {
-    return getBookByIdFromSupabase(id);
-  } else {
-    return getBookByIdFromStaticData(id);
+// Get all book IDs from Supabase
+export async function getAllBookIds(): Promise<string[]> {
+  checkSupabaseConfig();
+  
+  try {
+    const { data, error } = await supabase
+      .from('books')
+      .select('id')
+      .order('title');
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error('Failed to fetch book IDs');
+    }
+
+    return (data || []).map(row => row.id);
+  } catch (error) {
+    console.error('Error fetching book IDs from Supabase:', error);
+    throw new Error('Could not load book IDs.');
   }
 }
 
-// Get book from static data
-async function getBookByIdFromStaticData(id: string): Promise<BookPage | null> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
-  const book = BOOKS_DATA.find(book => book.id === id);
-  return book || null;
+// Get single book by ID from Supabase
+export async function getBookById(id: string): Promise<BookPage | null> {
+  checkSupabaseConfig();
+  return getBookByIdFromSupabase(id);
 }
 
 // Get book from Supabase
@@ -152,9 +133,7 @@ async function getBookByIdFromSupabase(id: string): Promise<BookPage | null> {
 
 // Add new book (Supabase only)
 export async function addBook(book: Omit<BookPage, 'submittedBy'>): Promise<BookPage> {
-  if (!USE_SUPABASE) {
-    throw new Error('Adding books requires Supabase configuration');
-  }
+  checkSupabaseConfig();
 
   try {
     const { data, error } = await supabase
@@ -185,9 +164,7 @@ export async function addBook(book: Omit<BookPage, 'submittedBy'>): Promise<Book
 
 // Delete book (Supabase only)
 export async function deleteBook(id: string): Promise<void> {
-  if (!USE_SUPABASE) {
-    throw new Error('Deleting books requires Supabase configuration');
-  }
+  checkSupabaseConfig();
 
   try {
     const { error } = await supabase
@@ -205,7 +182,7 @@ export async function deleteBook(id: string): Promise<void> {
   }
 }
 
-// Check if using Supabase
+// Check if Supabase is properly configured
 export function isUsingSupabase(): boolean {
-  return USE_SUPABASE;
+  return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 }

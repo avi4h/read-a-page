@@ -4,62 +4,72 @@ import { useUiStore } from '../stores/useUiStore';
 import { useReadingStore } from '../stores/useReadingStore';
 import { useSearchStore } from '../stores/useSearchStore';
 import { getBookIdFromHash } from '../lib/hash';
-import { ALL_BOOK_IDS, BOOKS_DATA } from '../lib/data';
-import { getRootRouteUrl, setCachedBookIds } from '../lib/navigation';
+import { getRootRouteUrl } from '../lib/navigation';
 import { addBookToHistory } from '../lib/userPreferences';
 import { AdminPage } from './AdminPage';
 import { NotFoundPage } from './NotFoundPage';
-
-// Set cached book IDs for navigation optimization
-setCachedBookIds(ALL_BOOK_IDS);
 
 interface RouteHandlerProps {
     children: React.ReactNode;
 }
 
 // Error boundary for route components
-class RouteErrorBoundary extends React.Component<
-    { children: React.ReactNode },
-    { hasError: boolean; error?: Error }
-> {
-    constructor(props: { children: React.ReactNode }) {
-        super(props);
-        this.state = { hasError: false };
-    }
-
-    static getDerivedStateFromError(error: Error) {
-        return { hasError: true, error };
-    }
-
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('Route error:', error, errorInfo);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return (
+const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    return (
+        <React.Suspense
+            fallback={
                 <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
                     <div className="text-center p-8 max-w-lg mx-auto">
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
-                            Something went wrong
-                        </h2>
-                        <p className="text-slate-600 dark:text-slate-400 mb-4">
-                            We encountered an error loading this page.
-                        </p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="px-4 py-2 bg-brand-teal-500 text-white rounded-md hover:bg-brand-teal-600 transition-colors"
-                        >
-                            Reload Page
-                        </button>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-teal-500 mx-auto mb-4"></div>
+                        <p className="text-slate-600 dark:text-slate-400">Loading...</p>
                     </div>
                 </div>
-            );
-        }
+            }
+        >
+            <ErrorFallback>
+                {children}
+            </ErrorFallback>
+        </React.Suspense>
+    );
+};
 
-        return this.props.children;
+// Error fallback component
+const ErrorFallback: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [hasError, setHasError] = React.useState(false);
+
+    React.useEffect(() => {
+        const handleError = (error: ErrorEvent) => {
+            console.error('Route error:', error);
+            setHasError(true);
+        };
+
+        window.addEventListener('error', handleError);
+        return () => window.removeEventListener('error', handleError);
+    }, []);
+
+    if (hasError) {
+        return (
+            <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+                <div className="text-center p-8 max-w-lg mx-auto">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+                        Something went wrong
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-400 mb-4">
+                        We encountered an error loading this page.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-brand-teal-500 text-white rounded-md hover:bg-brand-teal-600 transition-colors"
+                    >
+                        Reload Page
+                    </button>
+                </div>
+            </div>
+        );
     }
-}
+
+    return <>{children}</>;
+};
 
 interface RouteHandlerProps {
     children: React.ReactNode;
@@ -73,8 +83,14 @@ const ReadAPageRedirect: React.FC = () => {
     React.useEffect(() => {
         // Set the view to 'reading' to show "Read a Page" as active in header
         setView('reading');
-        const targetUrl = getRootRouteUrl(ALL_BOOK_IDS);
-        navigate(targetUrl, { replace: true });
+        
+        // Get the root route URL and navigate
+        getRootRouteUrl().then(targetUrl => {
+            navigate(targetUrl, { replace: true });
+        }).catch(error => {
+            console.error('Failed to get root route URL:', error);
+            navigate('/covers', { replace: true });
+        });
     }, [navigate, setView]);
 
     return null;
@@ -89,6 +105,7 @@ const ReadingRoute: React.FC<{ isReveal?: boolean }> = ({ isReveal }) => {
     const setView = useUiStore((state) => state.setView);
     const setBookById = useReadingStore((state) => state.setBookById);
     const revealBook = useReadingStore((state) => state.revealBook);
+    const allBookIds = useReadingStore((state) => state.allBookIds);
 
     React.useEffect(() => {
         if (!hashedId) {
@@ -96,18 +113,16 @@ const ReadingRoute: React.FC<{ isReveal?: boolean }> = ({ isReveal }) => {
             return;
         }
 
-        const originalId = getBookIdFromHash(hashedId, ALL_BOOK_IDS);
-        if (!originalId) {
-            // Invalid hash, redirect to covers page
-            console.warn(`Invalid book hash: ${hashedId}`);
-            navigate('/covers', { replace: true });
+        // Wait for book IDs to load if they're not available yet
+        if (allBookIds.length === 0) {
+            // Book IDs not loaded yet, will retry when they're available
             return;
         }
 
-        // Find book data for validation
-        const book = BOOKS_DATA.find(b => b.id === originalId);
-        if (!book) {
-            console.warn(`Book not found for ID: ${originalId}`);
+        const originalId = getBookIdFromHash(hashedId, allBookIds);
+        if (!originalId) {
+            // Invalid hash, redirect to covers page
+            console.warn(`Invalid book hash: ${hashedId}`);
             navigate('/covers', { replace: true });
             return;
         }
@@ -127,7 +142,7 @@ const ReadingRoute: React.FC<{ isReveal?: boolean }> = ({ isReveal }) => {
             // This handles cases where user goes from reveal back to normal view
             setBookById(originalId); // This resets isRevealed to false
         }
-    }, [hashedId, isReveal, navigate, setView, setBookById, revealBook]);
+    }, [hashedId, isReveal, navigate, setView, setBookById, revealBook, allBookIds]);
 
     return null;
 };

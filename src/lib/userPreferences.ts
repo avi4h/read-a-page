@@ -387,13 +387,7 @@ export const isBookInLocalShelf = (bookId: string): boolean => {
   return books.some(b => b.id === bookId);
 };
 
-/**
- * Load full book data for books in bookshelf (requires external book lookup)
- * This function returns the bookshelf entries with their IDs and timestamps
- */
-export const getBookshelfWithTimestamps = (): BookshelfEntry[] => {
-  return loadBookshelf();
-};
+
 
 /**
  * Clear all books from bookshelf in userData
@@ -410,80 +404,6 @@ export const clearLocalBookshelf = (): void => {
     console.error('Failed to clear bookshelf in userData:', error);
   }
 };
-
-/**
- * Sync local bookshelf with provided book IDs array
- */
-export const syncLocalBookshelf = (bookIds: string[]): void => {
-  const bookshelfEntries: BookshelfEntry[] = bookIds.map(id => ({
-    id,
-    timestamp: new Date().toISOString(),
-  }));
-  saveBookshelf(bookshelfEntries);
-};
-
-/**
- * Debug function to log current bookshelf from userData
- */
-export const debugLocalBookshelf = (): void => {
-  try {
-    const preferences = loadUserPreferences();
-    const books = preferences.bookShelf;
-    console.log('Bookshelf Debug Info (from userData):');
-    console.log(`Total books: ${books.length}`);
-    console.log('Book IDs:', books.map(b => b.id));
-    console.log('Book timestamps:', books.map(b => b.timestamp));
-    console.log('Full bookshelf data:', books);
-    console.log('Complete userData structure:', preferences);
-  } catch (error) {
-    console.error('Failed to debug bookshelf:', error);
-  }
-};
-
-/**
- * Export bookshelf for backup
- */
-export const exportBookshelf = (): string => {
-  const books = loadBookshelf();
-  return JSON.stringify(books, null, 2);
-};
-
-/**
- * Import bookshelf from backup
- */
-export const importBookshelf = (jsonString: string): BookshelfEntry[] => {
-  try {
-    const imported = JSON.parse(jsonString);
-    if (Array.isArray(imported)) {
-      // Convert old format to new format if needed
-      const bookshelfEntries: BookshelfEntry[] = imported.map((item: any) => {
-        if (typeof item === 'string') {
-          // If it's just an ID
-          return {
-            id: item,
-            timestamp: new Date().toISOString(),
-          };
-        } else if (item.id) {
-          // If it's already in the new format or has an id property
-          return {
-            id: item.id,
-            timestamp: item.timestamp || new Date().toISOString(),
-          };
-        } else {
-          throw new Error('Invalid bookshelf entry format');
-        }
-      });
-      saveBookshelf(bookshelfEntries);
-      return bookshelfEntries;
-    } else {
-      throw new Error('Invalid bookshelf format - must be an array');
-    }
-  } catch (error) {
-    console.error('Failed to import bookshelf:', error);
-    throw new Error('Invalid bookshelf format');
-  }
-};
-
 
 /**
  * Migration function to handle transition from old userPreferences to new userData format

@@ -36,9 +36,7 @@ module.exports = {
         'popover-in': 'popoverIn 0.2s ease-out',
         'controls-in': 'controlsIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1)',
         'slide-in': 'slideIn 0.5s ease-out',
-        'slide-out': 'slideOut 0.3s ease-in',
         'scale-in': 'scaleIn 0.3s ease-out',
-        'scale-out': 'scaleOut 0.2s ease-in',
         'bounce-in': 'bounceIn 0.4s ease-out',
         'book-remove': 'bookRemove 0.4s ease-in-out forwards',
         'book-add': 'bookAdd 0.4s ease-out',
@@ -65,17 +63,9 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateX(-20px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
-        slideOut: {
-          '0%': { opacity: '1', transform: 'translateX(0)' },
-          '100%': { opacity: '0', transform: 'translateX(20px)' },
-        },
         scaleIn: {
           '0%': { opacity: '0', transform: 'scale(0.8)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
-        },
-        scaleOut: {
-          '0%': { opacity: '1', transform: 'scale(1)' },
-          '100%': { opacity: '0', transform: 'scale(0.8)' },
         },
         bounceIn: {
           '0%': { opacity: '0', transform: 'scale(0.3)' },
