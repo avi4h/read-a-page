@@ -112,7 +112,7 @@ const ReadingRoute: React.FC<{ isReveal?: boolean }> = ({ isReveal }) => {
 
         // Save this book to history with revealed status based on route
         const isRevealed = Boolean(isReveal);
-        addBookToHistory(originalId, hashedId, book.title, isRevealed);
+        addBookToHistory(originalId, isRevealed);
 
         // If it's a reveal route, show the book information
         if (isReveal) {

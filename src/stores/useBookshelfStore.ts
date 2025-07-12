@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { type BookPage } from '../types';
 import * as db from '../lib/db';
+import { 
+  loadBookshelf, 
+  addBookToLocalShelf, 
+  removeBookFromLocalShelf,
+  syncLocalBookshelf 
+} from '../lib/userPreferences';
 
 interface BookshelfState {
   books: BookPage[];
@@ -27,6 +33,7 @@ interface BookshelfActions {
   
   // Utility actions
   clearError: () => void;
+  initializeFromLocalStorage: () => void;
 }
 
 type BookshelfStore = BookshelfState & BookshelfActions;
@@ -44,8 +51,27 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
     
     try {
       await db.initDB();
-      const books = await db.getBooks();
+      const dbBooks = await db.getBooks();
+      const localBookshelfEntries = loadBookshelf(); // Now returns BookshelfEntry[]
+      
+      // Get the IDs from localStorage
+      const localBookIds = localBookshelfEntries.map(entry => entry.id);
+      
+      // Filter dbBooks to only include those in the bookshelf
+      const bookshelfBooks = dbBooks.filter(book => localBookIds.includes(book.id));
+      
+      // Use a Map to avoid duplicates based on book ID
+      const bookMap = new Map<string, BookPage>();
+      
+      // Add books from the filtered database results
+      bookshelfBooks.forEach(book => bookMap.set(book.id, book));
+      
+      const books = Array.from(bookMap.values());
       const bookIds = books.map(b => b.id);
+      
+      // Keep localStorage bookshelf in sync with what we actually found
+      const foundBookIds = books.map(b => b.id);
+      syncLocalBookshelf(foundBookIds);
       
       set({
         status: 'succeeded',
@@ -54,16 +80,32 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
         error: null
       });
     } catch (error) {
-      set({
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Failed to fetch bookshelf'
-      });
+      // If IndexedDB fails, we can't get full book data, so show empty bookshelf
+      // but we can still show the IDs for debugging
+      try {
+        const localBookshelfEntries = loadBookshelf();
+        const bookIds = localBookshelfEntries.map(entry => entry.id);
+        
+        set({
+          status: 'succeeded',
+          books: [], // No full book data available without IndexedDB
+          bookIds,
+          error: null
+        });
+      } catch (localError) {
+        set({
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Failed to fetch bookshelf'
+        });
+      }
     }
   },
 
   addBookToShelf: async (book) => {
     try {
+      // Save to both IndexedDB and localStorage
       await db.addBook(book);
+      addBookToLocalShelf(book);
       
       const state = get();
       if (!state.bookIds.includes(book.id)) {
@@ -74,16 +116,32 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
         });
       }
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to save book.'
-      });
-      throw error;
+      // If IndexedDB fails, try to save to localStorage only
+      try {
+        addBookToLocalShelf(book);
+        
+        const state = get();
+        if (!state.bookIds.includes(book.id)) {
+          set({
+            books: [...state.books, book],
+            bookIds: [...state.bookIds, book.id],
+            error: null
+          });
+        }
+      } catch (localError) {
+        set({
+          error: error instanceof Error ? error.message : 'Failed to save book.'
+        });
+        throw error;
+      }
     }
   },
 
   removeBookFromShelf: async (bookId) => {
     try {
+      // Remove from both IndexedDB and localStorage
       await db.deleteBook(bookId);
+      removeBookFromLocalShelf(bookId);
       
       const state = get();
       set({
@@ -92,10 +150,22 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
         error: null
       });
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to remove book.'
-      });
-      throw error;
+      // If IndexedDB fails, try to remove from localStorage only
+      try {
+        removeBookFromLocalShelf(bookId);
+        
+        const state = get();
+        set({
+          books: state.books.filter(b => b.id !== bookId),
+          bookIds: state.bookIds.filter(id => id !== bookId),
+          error: null
+        });
+      } catch (localError) {
+        set({
+          error: error instanceof Error ? error.message : 'Failed to remove book.'
+        });
+        throw error;
+      }
     }
   },
 
@@ -107,16 +177,24 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
     addBookOptimistically(book);
     
     try {
+      // Save to both IndexedDB and localStorage
       await db.addBook(book);
+      addBookToLocalShelf(book);
       // Success - optimistic update stays
       set({ error: null });
     } catch (error) {
-      // Revert optimistic update on error
-      revertOptimisticAdd(book);
-      set({
-        error: error instanceof Error ? error.message : 'Failed to save book.'
-      });
-      throw error;
+      // Try localStorage only if IndexedDB fails
+      try {
+        addBookToLocalShelf(book);
+        set({ error: null });
+      } catch (localError) {
+        // Revert optimistic update on error
+        revertOptimisticAdd(book);
+        set({
+          error: error instanceof Error ? error.message : 'Failed to save book.'
+        });
+        throw error;
+      }
     }
   },
 
@@ -129,47 +207,95 @@ export const useBookshelfStore = create<BookshelfStore>((set, get) => ({
     removeBookOptimistically(bookId);
     
     try {
+      // Remove from both IndexedDB and localStorage
       await db.deleteBook(bookId);
+      removeBookFromLocalShelf(bookId);
       // Success - optimistic update stays
       set({ error: null });
     } catch (error) {
-      // Revert optimistic update on error
-      if (book) {
-        revertOptimisticRemove(book, bookId);
+      // Try localStorage only if IndexedDB fails
+      try {
+        removeBookFromLocalShelf(bookId);
+        set({ error: null });
+      } catch (localError) {
+        // Revert optimistic update on error
+        if (book) {
+          revertOptimisticRemove(book, bookId);
+        }
+        set({
+          error: error instanceof Error ? error.message : 'Failed to remove book.'
+        });
+        throw error;
       }
-      set({
-        error: error instanceof Error ? error.message : 'Failed to remove book.'
-      });
-      throw error;
     }
   },
 
   // Internal optimistic update helpers
   addBookOptimistically: (book) => set((state) => {
     if (!state.bookIds.includes(book.id)) {
+      const newBooks = [...state.books, book];
+      const newBookIds = [...state.bookIds, book.id];
+      // Sync with localStorage using just the IDs
+      syncLocalBookshelf(newBookIds);
       return {
-        books: [...state.books, book],
-        bookIds: [...state.bookIds, book.id]
+        books: newBooks,
+        bookIds: newBookIds
       };
     }
     return state;
   }),
 
-  removeBookOptimistically: (bookId) => set((state) => ({
-    books: state.books.filter(b => b.id !== bookId),
-    bookIds: state.bookIds.filter(id => id !== bookId)
-  })),
+  removeBookOptimistically: (bookId) => set((state) => {
+    const newBooks = state.books.filter(b => b.id !== bookId);
+    const newBookIds = state.bookIds.filter(id => id !== bookId);
+    // Sync with localStorage using just the IDs
+    syncLocalBookshelf(newBookIds);
+    return {
+      books: newBooks,
+      bookIds: newBookIds
+    };
+  }),
 
-  revertOptimisticAdd: (book) => set((state) => ({
-    books: state.books.filter(b => b.id !== book.id),
-    bookIds: state.bookIds.filter(id => id !== book.id)
-  })),
+  revertOptimisticAdd: (book) => set((state) => {
+    const newBooks = state.books.filter(b => b.id !== book.id);
+    const newBookIds = state.bookIds.filter(id => id !== book.id);
+    // Sync with localStorage using just the IDs
+    syncLocalBookshelf(newBookIds);
+    return {
+      books: newBooks,
+      bookIds: newBookIds
+    };
+  }),
 
-  revertOptimisticRemove: (book, bookId) => set((state) => ({
-    books: [...state.books, book],
-    bookIds: [...state.bookIds, bookId]
-  })),
+  revertOptimisticRemove: (book, bookId) => set((state) => {
+    const newBooks = [...state.books, book];
+    const newBookIds = [...state.bookIds, bookId];
+    // Sync with localStorage using just the IDs
+    syncLocalBookshelf(newBookIds);
+    return {
+      books: newBooks,
+      bookIds: newBookIds
+    };
+  }),
 
   // Utility actions
   clearError: () => set({ error: null }),
+  
+  // Utility action to initialize bookshelf from localStorage on app start
+  initializeFromLocalStorage: () => {
+    try {
+      const localBookshelfEntries = loadBookshelf(); // Now returns BookshelfEntry[]
+      if (localBookshelfEntries.length > 0) {
+        const bookIds = localBookshelfEntries.map(entry => entry.id);
+        set({
+          books: [], // We don't have full book data from localStorage anymore
+          bookIds,
+          status: 'idle', // Will need to fetch full data later
+          error: null
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to initialize bookshelf from localStorage:', error);
+    }
+  },
 }));

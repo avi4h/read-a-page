@@ -1,5 +1,5 @@
 /**
- * Simple hash function to generate a consistent 12-character hash from a string
+ * Simple hash function to generate a consistent 7-character hash from a string
  * This ensures that the same book ID always produces the same hash
  */
 export function hashBookId(bookId: string): string {
@@ -12,9 +12,9 @@ export function hashBookId(bookId: string): string {
     hash = hash & hash; // Convert to 32-bit integer
   }
   
-  // Convert to positive number and create a 12-character string
+  // Convert to positive number and create a 7-character string
   const positiveHash = Math.abs(hash);
-  const hashString = positiveHash.toString(36).padStart(12, '0').slice(0, 12);
+  const hashString = positiveHash.toString(36).padStart(7, '0').slice(0, 7);
   
   return hashString;
 }

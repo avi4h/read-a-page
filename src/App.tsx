@@ -43,11 +43,15 @@ const App: React.FC = () => {
     const currentBook = useReadingStore((state) => state.currentBook);
     const setSearchQuery = useSearchStore((state) => state.setSearchQuery);
     const fetchBookshelf = useBookshelfStore((state) => state.fetchBookshelf);
+    const initializeFromLocalStorage = useBookshelfStore((state) => state.initializeFromLocalStorage);
 
     // Initial data loading for the bookshelf
     useEffect(() => {
+        // First, try to load from localStorage for immediate UI update
+        initializeFromLocalStorage();
+        // Then fetch from database to ensure we have the latest data
         fetchBookshelf();
-    }, [fetchBookshelf]);
+    }, [fetchBookshelf, initializeFromLocalStorage]);
 
     // Handle search query from URL params
     useEffect(() => {
